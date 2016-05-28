@@ -1,0 +1,34 @@
+{% extends "index.html" %}
+
+{% block heading %}{{ blog.title }}{% endblock %}
+{% block subheading %}{{ blog.description }}{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+    <p class="text-center"><a href="/posts/new?blog_id={{ blog.key().id() }}">Create A Post</a></p>
+    {% for post in posts %}
+    <div class="post-preview">
+      <a href="post.html">
+        <h2 class="post-title">{{ post.subject }}</h2>
+        <h3 class="post-subtitle">
+          {{ post.content }}
+        </h3>
+      </a>
+      <p class="post-meta">Posted by <a href="#">{{ post.created_by.username }}</a> on {{ post.created }}</p>
+    </div>
+    <hr>
+    {% else %}
+      <h3 class="text-center">There are no posts.</h3>
+    {% endfor %}
+    {#
+    <!-- Pager -->
+    <ul class="pager">
+      <li class="next">
+        <a href="#">Older Posts &rarr;</a>
+      </li>
+    </ul>
+    #}
+  </div>
+</div>
+{% endblock %}
