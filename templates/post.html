@@ -3,11 +3,39 @@
 {% block heading %}{{ post.subject }}{% endblock %}
 {% block subheading %}
   A Post From {{ blog.title }}<br>
-  {{ post.created |timesince }}
+  {{ post.created |timesince }}<br>
+  {% set comment_count = comments.count() %}
+  <small>{{ comment_count }} Comment{% if comment_count > 1 %}s{% endif %} </small>
 {% endblock %}
 
 {% block content %}
-{% for line in post.content.splitlines() %}
-    {{line}}<br>
-{% endfor %}
+<div class="col-lg-12">
+  <p>{{ post.content|linebreaks }}</p>
+</div>
+
+<div class="col-lg-12" id="comments">
+  <form method="post">
+    <h3>Leave a comment</h3>
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    <textarea class="form-control" name="content" required></textarea>
+    <button class="btn btn-sm btn-default">Submit</button>
+  </form>
+</div>
+
+<div class="col-lg-12">
+  {% for comment in comments %}
+  <div class="comment">
+    <p>
+      <strong>{{ comment.created_by.name }}</strong>
+      <small>commented {{ comment.created | timesince }}</small><br/>
+      {{ comment.content | linebreaks }}
+    </p>
+  </div>
+  <hr/>
+  {% endfor %}
+</div>
+
+
 {% endblock %}

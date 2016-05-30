@@ -31,6 +31,7 @@ def check_secure_val(secure_val):
         return val
 
 jinja_env.filters['timesince'] = timesince
+jinja_env.filters['linebreaks'] = linebreaks
 
 class BlogHandler(webapp2.RequestHandler):
     def write(self, *a, **kw):
@@ -137,7 +138,23 @@ class PostPage(BlogHandler):
 
         if not post:
             return self.render404()
-        self.render("post.html", post = post, blog=blog)
+        comments = Comment.all().ancestor(post).order('-created')
+        self.render("post.html", post = post, blog=blog, comments=comments)
+
+    def post(self, blog_id, post_id):
+        blog = Blog.get_by_id(int(blog_id))
+        post = Post.get_by_id(int(post_id), parent=blog)
+
+        if not post:
+            return self.render404()
+        content = self.request.POST['content']
+        if not content:
+            error = "subject and content, please!"
+            self.render("post.html", post = post, blog=blog, error=error)
+        c = Comment(content=content, created_by=self.user, parent=post)
+        c.put()
+        self.redirect('/blogs/%s/posts/%s' % (blog_id, post_id))
+
 
 class NewPost(LoginRequired):
     def get(self):
