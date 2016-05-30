@@ -4,6 +4,7 @@
 {% block subheading %}
   A Post From {{ blog.title }}<br>
   <small>
+  {# Show update/delete links to user who created post only #}
   {% if user and post.created_by and post.created_by.key() ==  user.key() %}
   <a href="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/update">Edit</a> |
     <a data-delete="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/delete">Delete</a><br>
@@ -24,6 +25,8 @@
 </div>
 
 <div class="col-lg-12" id="comments">
+
+  {# Show like button to user who did not create post #}
   {% if user and post.created_by and post.created_by.key() !=  user.key() %}
   <form method="post" action="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/like">
     {% if user.key() in post.likes %}
@@ -35,18 +38,19 @@
     {% endif %}
   </form>
   {% endif %}
+
+  {% if user %}
   <form method="post">
-    {% if user %}
     <h3>Leave a comment</h3>
     {% if error %}
     <div class="alert alert-danger">{{ error }}</div>
     {% endif %}
     <textarea class="form-control" name="content" required></textarea>
     <button class="btn btn-sm btn-default">Submit</button>
-    {% else %}
-    <p><a href="/login">Login to leave a comment.</a></p>
-    {% endif %}
   </form>
+  {% else %}
+  <p><a href="/login">Login to leave a comment.</a></p>
+  {% endif %}
 </div>
 
 <div class="col-lg-12">
@@ -61,8 +65,5 @@
   <hr/>
   {% endfor %}
 </div>
-
-<script>
-</script>
 
 {% endblock %}

@@ -31,6 +31,9 @@ def timesince(dt, default="just now"):
 
 
 def linebreaks(string):
+    """
+    Replaces line breaks in text to html line breaks
+    """
     def escape(s):
         # unicode() forces the conversion to happen immediately,
         # instead of at substitution time (else <br> would get escaped too)

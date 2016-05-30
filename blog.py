@@ -1,38 +1,38 @@
 import os
-import re
-import random
-import hashlib
 import hmac
-from string import letters
 import json
 
 import webapp2
 import jinja2
-from google.appengine.ext import db
 
 from models import *
 from filters import *
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
-jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
-                               autoescape = True)
+jinja_env = jinja2.Environment(loader=jinja2.FileSystemLoader(template_dir),
+                               autoescape=True)
 
 secret = 'udacity-project-2'
+
 
 def render_str(template, **params):
     t = jinja_env.get_template(template)
     return t.render(params)
 
+
 def make_secure_val(val):
     return '%s|%s' % (val, hmac.new(secret, val).hexdigest())
+
 
 def check_secure_val(secure_val):
     val = secure_val.split('|')[0]
     if secure_val == make_secure_val(val):
         return val
 
+
 jinja_env.filters['timesince'] = timesince
 jinja_env.filters['linebreaks'] = linebreaks
+
 
 class BlogHandler(webapp2.RequestHandler):
     def write(self, *a, **kw):
@@ -70,39 +70,36 @@ class BlogHandler(webapp2.RequestHandler):
         self.error(404)
         self.render('404.html')
 
-def render_post(response, post):
-    response.out.write('<b>' + post.subject + '</b><br>')
-    response.out.write(post.content)
+    def authenticate(self, redirect="/login"):
+        # If user is not logged in, redirect to another page. Defaults to login page.
+        if not self.user:
+            return self.redirect(redirect)
+
 
 class MainPage(BlogHandler):
-  def get(self):
-      self.render('index.html', posts=Post.all().order('-created'))
-
-
-def blog_key(name = 'default'):
-    return db.Key.from_path('blogs', name)
-
-
-class LoginRequired(BlogHandler):
-
-    def authenticate(self, redirect="/login"):
-        if not self.user:
-            self.redirect(redirect)
+    """
+    Home Page of Multi User Blogs.
+    View all recents posts on the platform.
+    """
+    def get(self):
+        self.render('index.html', posts=Post.all().order('-created'))
 
 
 class MyBlogs(BlogHandler):
-    # def get(self):
-    #     posts = greetings = Post.all().filter(
-    #         'created_by = ', self.user).order('-created')
-    #     self.render('blog.html', posts = posts)
+    """
+    View all blogs user created
+    """
     def get(self):
+        self.authenticate()
         blogs = Blog.all().filter(
             'created_by = ', self.user).order('-created')
-        self.render('blog-list.html', blogs = blogs)
+        self.render('blog-list.html', blogs=blogs)
 
 
-class NewBlog(LoginRequired):
-
+class NewBlog(BlogHandler):
+    """
+    Create a new blog
+    """
     def get(self):
         self.authenticate()
         self.render('blog-form.html')
@@ -111,8 +108,9 @@ class NewBlog(LoginRequired):
         self.authenticate()
         title = self.request.POST.get('title')
         description = self.request.POST.get('description')
+        # Create blog if all fields are valid
         if title and description:
-            b = Blog(title = title, description = description, created_by = self.user)
+            b = Blog(title=title, description=description, created_by=self.user)
             b.put()
             self.redirect('/blogs/%s' % str(b.key().id()))
         else:
@@ -120,19 +118,23 @@ class NewBlog(LoginRequired):
             self.render("blog-form.html", title=title, description=description, error=error)
 
 
-
 class BlogPage(BlogHandler):
-
+    """
+    View posts in a blog
+    """
     def get(self, blog_id):
         blog = Blog.get_by_id(int(blog_id))
         if not blog:
-            self.error(404)
-            return
+            return self.render404()
+        # Get all post in blog
         posts = Post.all().ancestor(blog).order('-created')
-        self.render("blog.html", posts = posts, blog = blog)
+        self.render("blog.html", posts=posts, blog=blog)
 
 
-class NewPost(LoginRequired):
+class NewPost(BlogHandler):
+    """
+    Create a new post
+    """
     def get(self):
         self.authenticate()
         blogs = Blog.all().filter('created_by = ', self.user)
@@ -145,10 +147,10 @@ class NewPost(LoginRequired):
         parent = self.request.POST.get('blog')
         subject = self.request.POST.get('subject')
         content = self.request.POST.get('content')
-
-        if subject and content:
+        # Create post if all fields are valid
+        if parent and subject and content:
             parent = Blog.get_by_id(int(parent))
-            p = Post(parent = parent.key(), subject = subject, content = content,
+            p = Post(parent=parent.key(), subject=subject, content=content,
                      created_by=self.user)
             p.put()
             self.redirect('/blogs/%s/posts/%s' % (parent.key().id(), p.key().id()))
@@ -158,47 +160,70 @@ class NewPost(LoginRequired):
 
 
 class PostMixin():
-
-    def get_post(self, blog_id, post_id, authenticate=False, user_only=False):
-        if authenticate:
-            self.authenticate()
+    """
+    Get blog and post via ids
+    """
+    def get_post(self, blog_id, post_id):
         blog = Blog.get_by_id(int(blog_id))
         post = Post.get_by_id(int(post_id), parent=blog)
-        if not post or (user_only and post.created_by.key() != self.user.key()):
-            return self.render404()
         return post, blog
 
-class PostPage(PostMixin, LoginRequired):
+
+class PostPage(PostMixin, BlogHandler):
+    """
+    View Post.
+    """
     def get(self, blog_id, post_id):
         post, blog = self.get_post(blog_id, post_id)
+        if not post:
+            return self.render404()
+        # Get comments from post
         comments = Comment.all().ancestor(post).order('-created')
-        self.render("post.html", post = post, blog=blog, comments=comments)
+        self.render("post.html", post=post, blog=blog, comments=comments)
 
+    # Post a comment on the post page
     def post(self, blog_id, post_id):
+        # check if user is logged in
+        self.authenticate()
         post, blog = self.get_post(blog_id, post_id, True)
+        if not post:
+            return self.render404()
         content = self.request.POST['content']
+        # check if comment content is given
         if not content:
             error = "subject and content, please!"
-            self.render("post.html", post = post, blog=blog, error=error)
+            self.render("post.html", post=post, blog=blog, error=error)
+        # Create comment then redirect back to post
         c = Comment(content=content, created_by=self.user, parent=post)
         c.put()
         self.redirect('/blogs/%s/posts/%s' % (blog_id, post_id))
 
 
-class PostUpdate(PostMixin, LoginRequired):
-
+class PostUpdate(PostMixin, BlogHandler):
+    """
+    Update Post.
+    """
     def get(self, blog_id, post_id):
-        post, blog = self.get_post(blog_id, post_id, True, True)
+        self.authenticate()
+        post, blog = self.get_post(blog_id, post_id)
+        # Check if post was created by user
+        if post is None or post.created_by.key() != self.user.key():
+            return self.render404()
         blogs = Blog.all().filter('created_by = ', self.user)
         self.render("post-form.html", post=post, blog_id=blog_id, blogs=blogs,
                     subject=post.subject, content=post.content)
 
     def post(self, blog_id, post_id):
+        self.authenticate()
         post, blog = self.get_post(blog_id, post_id, True, True)
+        # Check if post was created by user
+        if post is None or post.created_by.key() != self.user.key():
+            return self.render404()
         subject = self.request.POST.get('subject')
         content = self.request.POST.get('content')
-
+        # Check if form fields are filled up
         if subject and content:
+            # Update post and redirect to page page
             post.subject = subject
             post.content = content
             post.put()
@@ -210,33 +235,46 @@ class PostUpdate(PostMixin, LoginRequired):
                         subject=post.subject, content=post.content, error=error)
 
 
-class PostDelete(PostMixin, LoginRequired):
-
+class PostDelete(PostMixin, BlogHandler):
+    """
+    Request to Delete Posts. DELETE only. Returns success_url for redirect.
+    """
     def delete(self, blog_id, post_id):
         post, blog = self.get_post(blog_id, post_id, True, True)
+        if post is None or self.user is None or post.created_by.key() != self.user.key():
+            return self.render404()
         post.delete()
+        # Create a json response with redirect url
         self.response.headers['Content-Type'] = 'application/json'
         obj = {'success_url': '/blogs/%s' % blog_id}
         return self.response.out.write(json.dumps(obj))
 
 
-class PostLike(PostMixin, LoginRequired):
-
+class PostLike(PostMixin, BlogHandler):
+    """
+    Request to Like Posts. POST only.
+    """
     def post(self, blog_id, post_id):
+        self.authenticate()
         post, blog = self.get_post(blog_id, post_id, True)
-        if self.user.key() == post.created_by.key():
-            self.error(401)
+        # User that created the post cannot like the post
+        if post is None or post.created_by.key() == self.user.key():
+            return self.render404()
+        # Append to/remove from likes base of Post value
         if self.request.POST.get('like') == 'like':
             post.likes.append(self.user.key())
-        if self.request.POST.get('like') == 'unlike':
+        elif self.request.POST.get('like') == 'unlike':
             post.likes.remove(self.user.key())
         post.put()
         return self.redirect('/blogs/%s/posts/%s' % (blog_id, post_id))
 
 
-class PostLikeList(LoginRequired):
-
+class PostLikeList(BlogHandler):
+    """
+    A list of posts user liked
+    """
     def get(self):
         self.authenticate()
+        # Get all posts where user key is in the like attribute (list)
         posts = Post.gql("WHERE likes = :1", self.user.key())
         return self.render("post-like.html", posts=posts)

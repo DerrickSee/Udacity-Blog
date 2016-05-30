@@ -4,18 +4,26 @@ from models import User
 from blog import BlogHandler
 
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
+PASS_RE = re.compile(r"^.{3,20}$")
+EMAIL_RE = re.compile(r'^[\S]+@[\S]+\.[\S]+$')
+
+
 def valid_username(username):
     return username and USER_RE.match(username)
 
-PASS_RE = re.compile(r"^.{3,20}$")
+
 def valid_password(password):
     return password and PASS_RE.match(password)
 
-EMAIL_RE  = re.compile(r'^[\S]+@[\S]+\.[\S]+$')
+
 def valid_email(email):
     return not email or EMAIL_RE.match(email)
 
+
 class Signup(BlogHandler):
+    """
+    For user creation
+    """
     def get(self):
         if self.user:
             self.redirect('/blog')
@@ -28,7 +36,7 @@ class Signup(BlogHandler):
         self.verify = self.request.get('verify')
         self.email = self.request.get('email')
 
-        params = dict(username = self.username, email = self.email)
+        params = dict(username=self.username, email=self.email)
 
         if not valid_username(self.username):
             params['error_username'] = "That's not a valid username."
@@ -58,6 +66,9 @@ class Signup(BlogHandler):
 
 
 class Login(BlogHandler):
+    """
+    Authenticate and Logs user in
+    """
     def get(self):
         if self.user:
             self.redirect('/blog')
@@ -73,9 +84,13 @@ class Login(BlogHandler):
             self.redirect('/blogs')
         else:
             msg = 'Invalid login. Please try again.'
-            self.render('login.html', error = msg)
+            self.render('login.html', error=msg)
+
 
 class Logout(BlogHandler):
+    """
+    Logs user out
+    """
     def get(self):
         self.logout()
         self.redirect('/')

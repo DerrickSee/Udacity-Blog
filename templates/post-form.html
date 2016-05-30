@@ -10,6 +10,8 @@
       {% if error %}
       <div class="alert alert-danger">{{ error }}</div>
       {% endif %}
+
+      {# If updating post, no longer need to select blog to post to #}
       {% if not post %}
       <div class="row control-group">
         <div class="form-group col-xs-12 floating-label-form-group controls">

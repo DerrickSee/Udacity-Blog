@@ -6,30 +6,37 @@ from string import letters
 from google.appengine.ext import db
 
 
-def make_salt(length = 5):
+def make_salt(length=5):
     return ''.join(random.choice(letters) for x in xrange(length))
 
-def make_pw_hash(name, pw, salt = None):
+
+def make_pw_hash(name, pw, salt=None):
     if not salt:
         salt = make_salt()
     h = hashlib.sha256(name + pw + salt).hexdigest()
     return '%s,%s' % (salt, h)
 
+
 def valid_pw(name, password, h):
     salt = h.split(',')[0]
     return h == make_pw_hash(name, password, salt)
 
-def users_key(group = 'default'):
+
+def users_key(group='default'):
     return db.Key.from_path('users', group)
 
+
 class User(db.Model):
-    name = db.StringProperty(required = True)
-    pw_hash = db.StringProperty(required = True)
+    """
+    User model for authentication purposes
+    """
+    name = db.StringProperty(required=True)
+    pw_hash = db.StringProperty(required=True)
     email = db.StringProperty()
 
     @classmethod
     def by_id(cls, uid):
-        return User.get_by_id(uid, parent = users_key())
+        return User.get_by_id(uid, parent=users_key())
 
     @classmethod
     def by_name(cls, name):
@@ -37,12 +44,12 @@ class User(db.Model):
         return u
 
     @classmethod
-    def register(cls, name, pw, email = None):
+    def register(cls, name, pw, email=None):
         pw_hash = make_pw_hash(name, pw)
-        return User(parent = users_key(),
-                    name = name,
-                    pw_hash = pw_hash,
-                    email = email)
+        return User(parent=users_key(),
+                    name=name,
+                    pw_hash=pw_hash,
+                    email=email)
 
     @classmethod
     def login(cls, name, pw):
@@ -52,25 +59,33 @@ class User(db.Model):
 
 
 class Blog(db.Model):
-    title = db.StringProperty(required = True)
-    description = db.TextProperty(required = True)
-    created = db.DateTimeProperty(auto_now_add = True)
+    """
+    Users create Blogs to hold posts.
+    """
+    title = db.StringProperty(required=True)
+    description = db.TextProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
     created_by = db.ReferenceProperty(User)
+
 
 class Post(db.Model):
-    subject = db.StringProperty(required = True)
-    content = db.TextProperty(required = True)
-    created = db.DateTimeProperty(auto_now_add = True)
+    """
+    A blog entry.
+    A post is a child of a blog.
+    """
+    subject = db.StringProperty(required=True)
+    content = db.TextProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
     created_by = db.ReferenceProperty(User)
-    last_modified = db.DateTimeProperty(auto_now = True)
+    last_modified = db.DateTimeProperty(auto_now=True)
     likes = db.ListProperty(db.Key)
-
-    def render(self):
-        self._render_text = self.content.replace('\n', '<br>')
-        return render_str("post.html", p = self)
 
 
 class Comment(db.Model):
-    content = db.TextProperty(required = True)
-    created = db.DateTimeProperty(auto_now_add = True)
+    """
+    Comment model: For users to comment on posts.
+    Child of a Post.
+    """
+    content = db.TextProperty(required=True)
+    created = db.DateTimeProperty(auto_now_add=True)
     created_by = db.ReferenceProperty(User)
