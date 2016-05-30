@@ -54,7 +54,7 @@ class Signup(BlogHandler):
             u = User.register(self.username, self.password, self.email)
             u.put()
             self.login(u)
-            self.redirect('/blog')
+            self.redirect('/blogs')
 
 
 class Login(BlogHandler):
@@ -70,7 +70,7 @@ class Login(BlogHandler):
         u = User.login(username, password)
         if u:
             self.login(u)
-            self.redirect('/blog')
+            self.redirect('/blogs')
         else:
             msg = 'Invalid login. Please try again.'
             self.render('login.html', error = msg)

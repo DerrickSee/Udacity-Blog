@@ -4,8 +4,9 @@
 {% block subheading %}
   A Post From {{ blog.title }}<br>
   {{ post.created |timesince }}<br>
-  {% if post.created_by.key() ==  user.key() %}
-  <small><a href="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/update">Edit</a> | Delete</small><br>
+  {% if user and post.created_by.key() ==  user.key() %}
+  <small><a href="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/update">Edit</a> |
+    <a data-delete="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/delete">Delete</a></small><br>
   {% endif %}
   {% set comment_count = comments.count() %}
   <small>{{ comment_count }} Comment{% if comment_count > 1 %}s{% endif %} </small>
@@ -18,12 +19,16 @@
 
 <div class="col-lg-12" id="comments">
   <form method="post">
+    {% if user %}
     <h3>Leave a comment</h3>
     {% if error %}
     <div class="alert alert-danger">{{ error }}</div>
     {% endif %}
     <textarea class="form-control" name="content" required></textarea>
     <button class="btn btn-sm btn-default">Submit</button>
+    {% else %}
+    <p><a href="/login">Login to leave a comment.</a></p>
+    {% endif %}
   </form>
 </div>
 
@@ -40,5 +45,7 @@
   {% endfor %}
 </div>
 
+<script>
+</script>
 
 {% endblock %}

@@ -4,6 +4,7 @@ import random
 import hashlib
 import hmac
 from string import letters
+import json
 
 import webapp2
 import jinja2
@@ -154,23 +155,25 @@ class NewPost(LoginRequired):
             self.render("post-form.html", subject=subject, content=content, error=error)
 
 
-class PostPage(LoginRequired):
-    def get(self, blog_id, post_id):
+class PostMixin():
+
+    def get_post(self, blog_id, post_id, authenticate=False, user_only=False):
+        if authenticate:
+            self.authenticate()
         blog = Blog.get_by_id(int(blog_id))
         post = Post.get_by_id(int(post_id), parent=blog)
-
-        if not post:
+        if not post or (user_only and post.created_by.key() != self.user.key()):
             return self.render404()
+        return post, blog
+
+class PostPage(PostMixin, LoginRequired):
+    def get(self, blog_id, post_id):
+        post, blog = self.get_post(blog_id, post_id)
         comments = Comment.all().ancestor(post).order('-created')
         self.render("post.html", post = post, blog=blog, comments=comments)
 
     def post(self, blog_id, post_id):
-        self.authenticate()
-        blog = Blog.get_by_id(int(blog_id))
-        post = Post.get_by_id(int(post_id), parent=blog)
-
-        if not post:
-            return self.render404()
+        post, blog = self.get_post(blog_id, post_id, True)
         content = self.request.POST['content']
         if not content:
             error = "subject and content, please!"
@@ -180,24 +183,16 @@ class PostPage(LoginRequired):
         self.redirect('/blogs/%s/posts/%s' % (blog_id, post_id))
 
 
-class PostUpdate(LoginRequired):
-
-    def get_post(self, blog_id, post_id):
-        self.authenticate()
-        blog = Blog.get_by_id(int(blog_id))
-        post = Post.get_by_id(int(post_id), parent=blog)
-        if not post or post.created_by.key() != self.user.key():
-            return self.render404()
-        return post
+class PostUpdate(PostMixin, LoginRequired):
 
     def get(self, blog_id, post_id):
-        post = self.get_post(blog_id, post_id)
+        post, blog = self.get_post(blog_id, post_id, True, True)
         blogs = Blog.all().filter('created_by = ', self.user)
         self.render("post-form.html", post=post, blog_id=blog_id, blogs=blogs,
                     subject=post.subject, content=post.content)
 
     def post(self, blog_id, post_id):
-        post = self.get_post(blog_id, post_id)
+        post, blog = self.get_post(blog_id, post_id, True, True)
         subject = self.request.POST.get('subject')
         content = self.request.POST.get('content')
 
@@ -211,3 +206,13 @@ class PostUpdate(LoginRequired):
             blogs = Blog.all().filter('created_by = ', self.user)
             self.render("post-form.html", post=post, blog_id=blog_id, blogs=blogs,
                         subject=post.subject, content=post.content, error=error)
+
+
+class PostDelete(PostMixin, LoginRequired):
+
+    def delete(self, blog_id, post_id):
+        post, blog = self.get_post(blog_id, post_id, True, True)
+        post.delete()
+        self.response.headers['Content-Type'] = 'application/json'
+        obj = {'success_url': '/blogs/%s' % blog_id}
+        return self.response.out.write(json.dumps(obj))
