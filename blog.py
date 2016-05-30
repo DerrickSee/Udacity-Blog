@@ -185,7 +185,7 @@ class PostPage(PostMixin, BlogHandler):
     def post(self, blog_id, post_id):
         # check if user is logged in
         self.authenticate()
-        post, blog = self.get_post(blog_id, post_id, True)
+        post, blog = self.get_post(blog_id, post_id)
         if not post:
             return self.render404()
         content = self.request.POST['content']
@@ -215,7 +215,7 @@ class PostUpdate(PostMixin, BlogHandler):
 
     def post(self, blog_id, post_id):
         self.authenticate()
-        post, blog = self.get_post(blog_id, post_id, True, True)
+        post, blog = self.get_post(blog_id, post_id)
         # Check if post was created by user
         if post is None or post.created_by.key() != self.user.key():
             return self.render404()
@@ -240,7 +240,7 @@ class PostDelete(PostMixin, BlogHandler):
     Request to Delete Posts. DELETE only. Returns success_url for redirect.
     """
     def delete(self, blog_id, post_id):
-        post, blog = self.get_post(blog_id, post_id, True, True)
+        post, blog = self.get_post(blog_id, post_id)
         if post is None or self.user is None or post.created_by.key() != self.user.key():
             return self.render404()
         post.delete()
@@ -256,7 +256,7 @@ class PostLike(PostMixin, BlogHandler):
     """
     def post(self, blog_id, post_id):
         self.authenticate()
-        post, blog = self.get_post(blog_id, post_id, True)
+        post, blog = self.get_post(blog_id, post_id)
         # User that created the post cannot like the post
         if post is None or post.created_by.key() == self.user.key():
             return self.render404()
@@ -278,3 +278,51 @@ class PostLikeList(BlogHandler):
         # Get all posts where user key is in the like attribute (list)
         posts = Post.gql("WHERE likes = :1", self.user.key())
         return self.render("post-like.html", posts=posts)
+
+
+class CommentUpdate(PostMixin, BlogHandler):
+    """
+    Update comment. Only by user that created comment
+    """
+
+    def get_comment(self, blog_id, post_id, comment_id):
+        self.authenticate()
+        post, blog = self.get_post(blog_id, post_id)
+        return Comment.get_by_id(int(comment_id), parent=post)
+
+    def get(self, blog_id, post_id, comment_id):
+        comment = self.get_comment(blog_id, post_id, comment_id)
+        if comment is None or comment.created_by.key() != self.user.key():
+            return self.render404()
+        return self.render('comment-form.html', comment=comment,
+                           blog_id=blog_id, post_id=post_id)
+
+    def post(self, blog_id, post_id, comment_id):
+        comment = self.get_comment(blog_id, post_id, comment_id)
+        if comment is None or comment.created_by.key() != self.user.key():
+            return self.render404()
+        content = self.request.POST.get('content')
+        if content:
+            comment.content = content
+            comment.put()
+            return self.redirect('/blogs/%s/posts/%s' % (blog_id, post_id))
+        else:
+            return self.render('comment-form.html', comment=comment,
+                               blog_id=blog_id, post_id=post_id)
+
+
+class CommentDelete(PostMixin, BlogHandler):
+    """
+    Request to Delete Posts. DELETE only. Returns success_url for redirect.
+    """
+    def delete(self, blog_id, post_id, comment_id):
+        post, blog = self.get_post(blog_id, post_id)
+        comment = Comment.get_by_id(int(comment_id), parent=post)
+        if comment is None or self.user is None or \
+                comment.created_by.key() != self.user.key():
+            return self.render404()
+        comment.delete()
+        # Create a json response with redirect url
+        self.response.headers['Content-Type'] = 'application/json'
+        obj = {'success_url': '/blogs/%s/posts/%s' % (blog_id, post_id)}
+        return self.response.out.write(json.dumps(obj))

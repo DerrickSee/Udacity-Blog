@@ -1,0 +1,30 @@
+{% extends "index.html" %}
+
+{% block heading %}Update Comment{% endblock %}
+{% block subheading %}Making Changes?{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+    <form method="post">
+      {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+      {% endif %}
+      <div class="row control-group">
+        <div class="form-group col-xs-12 floating-label-form-group controls">
+          <label>Comment</label>
+          <textarea class="form-control" placeholder="Enter your content" name="content" required data-validation-required-message="Please enter content.">{{ comment.content }}</textarea>
+          <p class="help-block text-danger">{{ error_content }}</p>
+        </div>
+      </div
+      <br>
+      <div id="success"></div>
+      <div class="row">
+        <div class="form-group col-xs-12">
+          <button type="submit" class="btn btn-default">Save Changes</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

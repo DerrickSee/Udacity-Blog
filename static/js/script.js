@@ -1,9 +1,10 @@
 $(function() {
   $('a[data-delete]').click(function(){
     var elem = $(this);
+    var typ = elem.attr('ptype');
     swal({
       title: "Are you sure?",
-      text: "Your will not be able to recover this post!",
+      text: "Your will not be able to recover this " + typ + "!",
       type: "warning",
       showCancelButton: true,
       closeOnConfirm: false,
@@ -15,7 +16,7 @@ $(function() {
       }).done(function(obj){
         swal({
           title: "Deleted!",
-          text: "Your post has been deleted.",
+          text: "Your " + typ + " has been deleted.",
           type: "success",
         }, function(){
           window.location.href = obj.success_url;

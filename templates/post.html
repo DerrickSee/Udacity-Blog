@@ -7,7 +7,7 @@
   {# Show update/delete links to user who created post only #}
   {% if user and post.created_by and post.created_by.key() ==  user.key() %}
   <a href="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/update">Edit</a> |
-    <a data-delete="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/delete">Delete</a><br>
+    <a data-delete="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/delete" ptype="post">Delete</a><br>
   {% elif post.created_by %}
   Written by {{ post.created_by.name }}
   {% endif %}
@@ -61,6 +61,12 @@
       <small>commented {{ comment.created | timesince }}</small><br/>
       {{ comment.content | linebreaks }}
     </p>
+    {% if comment.created_by.key() == user.key() %}
+    <small>
+      <a href="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/comments/{{ comment.key().id() }}">Edit</a> |
+      <a data-delete="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/comments/{{ comment.key().id() }}/delete" ptype="comment">Delete</a>
+    </small>
+    {% endif %}
   </div>
   <hr/>
   {% endfor %}
