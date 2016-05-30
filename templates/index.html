@@ -45,7 +45,7 @@
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
         </button>
-        <a class="navbar-brand" href="index.html">Udacity Project 2</a>
+        <a class="navbar-brand" href="/">Udacity Project 2</a>
       </div>
 
       <!-- Collect the nav links, forms, and other content for toggling -->
@@ -90,13 +90,10 @@
       <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
         {% for post in posts %}
         <div class="post-preview">
-          <a href="post.html">
+          <a href="/blogs/{{ post.parent().key().id()}}/posts/{{ post.key().id() }}">
             <h2 class="post-title">{{ post.subject }}</h2>
-            <h3 class="post-subtitle">
-              {{ post.content }}
-            </h3>
           </a>
-          <p class="post-meta">Posted by <a href="#">{{ post.created_by.username }}</a> on {{ post.created }}</p>
+          <p class="post-meta">Posted by {{ post.created_by.name }} {{ post.created | timesince }}</p>
         </div>
         <hr>
         {% else %}

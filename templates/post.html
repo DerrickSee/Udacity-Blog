@@ -3,13 +3,17 @@
 {% block heading %}{{ post.subject }}{% endblock %}
 {% block subheading %}
   A Post From {{ blog.title }}<br>
-  {{ post.created |timesince }}<br>
-  {% if user and post.created_by.key() ==  user.key() %}
-  <small><a href="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/update">Edit</a> |
-    <a data-delete="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/delete">Delete</a></small><br>
+  <small>
+  {% if user and post.created_by and post.created_by.key() ==  user.key() %}
+  <a href="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/update">Edit</a> |
+    <a data-delete="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/delete">Delete</a><br>
+  {% elif post.created_by %}
+  Written by {{ post.created_by.name }}
   {% endif %}
+  {{ post.created |timesince }}<br>
   {% set comment_count = comments.count() %}
-  <small>{{ comment_count }} Comment{% if comment_count > 1 %}s{% endif %} </small>
+  {{ comment_count }} Comment{% if comment_count > 1 %}s{% endif %}
+  </small>
 {% endblock %}
 
 {% block content %}
