@@ -9,13 +9,10 @@
     <p class="text-center"><a href="/posts/new?blog_id={{ blog.key().id() }}">Create A Post</a></p>
     {% for post in posts %}
     <div class="post-preview">
-      <a href="post.html">
+      <a href="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}">
         <h2 class="post-title">{{ post.subject }}</h2>
-        <h3 class="post-subtitle">
-          {{ post.content }}
-        </h3>
       </a>
-      <p class="post-meta">Posted by <a href="#">{{ post.created_by.username }}</a> on {{ post.created }}</p>
+      <p class="post-meta">Posted by <a href="#">{{ post.created_by.name }}</a> {{ post.created|timesince }}</p>
     </div>
     <hr>
     {% else %}

@@ -10,6 +10,7 @@ import jinja2
 from google.appengine.ext import db
 
 from models import *
+from filters import *
 
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
@@ -28,6 +29,8 @@ def check_secure_val(secure_val):
     val = secure_val.split('|')[0]
     if secure_val == make_secure_val(val):
         return val
+
+jinja_env.filters['timesince'] = timesince
 
 class BlogHandler(webapp2.RequestHandler):
     def write(self, *a, **kw):
@@ -60,6 +63,10 @@ class BlogHandler(webapp2.RequestHandler):
         webapp2.RequestHandler.initialize(self, *a, **kw)
         uid = self.read_secure_cookie('user_id')
         self.user = uid and User.by_id(int(uid))
+
+    def render404(self):
+        self.error(404)
+        self.render('404.html')
 
 def render_post(response, post):
     response.out.write('<b>' + post.subject + '</b><br>')
@@ -96,7 +103,7 @@ class NewBlog(LoginRequired):
 
     def get(self):
         self.authenticate()
-        self.render('newblog.html')
+        self.render('blog-form.html')
 
     def post(self):
         self.authenticate()
@@ -108,7 +115,7 @@ class NewBlog(LoginRequired):
             self.redirect('/blogs/%s' % str(b.key().id()))
         else:
             error = "Please enter title and description!"
-            self.render("newpost.html", title=title, description=description, error=error)
+            self.render("blog-form.html", title=title, description=description, error=error)
 
 
 
@@ -119,26 +126,24 @@ class BlogPage(BlogHandler):
         if not blog:
             self.error(404)
             return
-        posts = Post.all().filter('parent =', blog).order('-created')
+        posts = Post.all().ancestor(blog).order('-created')
         self.render("blog.html", posts = posts, blog = blog)
 
 
 class PostPage(BlogHandler):
-    def get(self, post_id):
-        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
-        post = db.get(key)
+    def get(self, blog_id, post_id):
+        blog = Blog.get_by_id(int(blog_id))
+        post = Post.get_by_id(int(post_id), parent=blog)
 
         if not post:
-            self.error(404)
-            return
-
-        self.render("permalink.html", post = post)
+            return self.render404()
+        self.render("post.html", post = post, blog=blog)
 
 class NewPost(LoginRequired):
     def get(self):
         self.authenticate()
         blogs = Blog.all().filter('created_by = ', self.user)
-        self.render('newpost.html', blogs=blogs, blog_id=self.request.GET.get('blog_id'))
+        self.render('post-form.html', blogs=blogs, blog_id=self.request.GET.get('blog_id'))
 
     def post(self):
         self.authenticate()
@@ -148,9 +153,10 @@ class NewPost(LoginRequired):
 
         if subject and content:
             parent = Blog.get_by_id(int(parent))
-            p = Post(parent = parent.key(), subject = subject, content = content)
+            p = Post(parent = parent.key(), subject = subject, content = content,
+                     created_by=self.user)
             p.put()
-            self.redirect('/blog/%s' % str(p.key().id()))
+            self.redirect('/blogs/%s/posts/%s' % (parent.key().id(), p.key().id()))
         else:
             error = "subject and content, please!"
             self.render("newpost.html", subject=subject, content=content, error=error)

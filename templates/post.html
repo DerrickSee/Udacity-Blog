@@ -1,15 +1,13 @@
-<div class="post">
-  <div class="post-heading">
-    <div class="post-title">
-      {{p.subject}}
-    </div>
+{% extends "index.html" %}
 
-    <div class="post-date">
-      {{p.created.strftime("%b %d, %Y")}}
-    </div>
-  </div>
+{% block heading %}{{ post.subject }}{% endblock %}
+{% block subheading %}
+  A Post From {{ blog.title }}<br>
+  {{ post.created |timesince }}
+{% endblock %}
 
-  <div class="post-content">
-    {{p._render_text | safe}}
-  </div>
-</div>
+{% block content %}
+{% for line in post.content.splitlines() %}
+    {{line}}<br>
+{% endfor %}
+{% endblock %}
