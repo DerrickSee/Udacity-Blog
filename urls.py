@@ -15,6 +15,7 @@ app = webapp2.WSGIApplication([
     ('/blogs/([0-9]+)/posts/([0-9]+)', PostPage),
     ('/blogs/([0-9]+)/posts/([0-9]+)/update', PostUpdate),
     ('/blogs/([0-9]+)/posts/([0-9]+)/delete', PostDelete),
+    ('/blogs/([0-9]+)/posts/([0-9]+)/like', PostLike),
 
     ('/posts/new', NewPost),
 

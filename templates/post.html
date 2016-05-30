@@ -12,7 +12,9 @@
   {% endif %}
   {{ post.created |timesince }}<br>
   {% set comment_count = comments.count() %}
-  {{ comment_count }} Comment{% if comment_count > 1 %}s{% endif %}
+  {% set like_count = post.likes | length %}
+  {{ comment_count }} Comment{% if comment_count > 1 %}s{% endif %} |
+  {{ like_count }} Like{% if like_count > 1 %}s{% endif %}
   </small>
 {% endblock %}
 
@@ -22,6 +24,17 @@
 </div>
 
 <div class="col-lg-12" id="comments">
+  {% if user and post.created_by and post.created_by.key() !=  user.key() %}
+  <form method="post" action="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/like">
+    {% if user.key() in post.likes %}
+    <input type="hidden" name="like" value="unlike">
+    <button class="btn btn-sm btn-danger">Unlike Post</button>
+    {% else %}
+    <input type="hidden" name="like" value="like">
+    <button class="btn btn-sm btn-success">Like Post</button>
+    {% endif %}
+  </form>
+  {% endif %}
   <form method="post">
     {% if user %}
     <h3>Leave a comment</h3>

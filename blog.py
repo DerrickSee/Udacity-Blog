@@ -136,6 +136,8 @@ class NewPost(LoginRequired):
     def get(self):
         self.authenticate()
         blogs = Blog.all().filter('created_by = ', self.user)
+        if blogs.count() == 0:
+            self.redirect('/blogs/new')
         self.render('post-form.html', blogs=blogs, blog_id=self.request.GET.get('blog_id'))
 
     def post(self):
@@ -216,3 +218,17 @@ class PostDelete(PostMixin, LoginRequired):
         self.response.headers['Content-Type'] = 'application/json'
         obj = {'success_url': '/blogs/%s' % blog_id}
         return self.response.out.write(json.dumps(obj))
+
+
+class PostLike(PostMixin, LoginRequired):
+
+    def post(self, blog_id, post_id):
+        post, blog = self.get_post(blog_id, post_id, True)
+        if self.user.key() == post.created_by.key():
+            self.error(401)
+        if self.request.POST.get('like') == 'like':
+            post.likes.append(self.user.key())
+        if self.request.POST.get('like') == 'unlike':
+            post.likes.remove(self.user.key())
+        post.put()
+        return self.redirect('/blogs/%s/posts/%s' % (blog_id, post_id))
