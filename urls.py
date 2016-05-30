@@ -18,5 +18,6 @@ app = webapp2.WSGIApplication([
     ('/blogs/([0-9]+)/posts/([0-9]+)/like', PostLike),
 
     ('/posts/new', NewPost),
+    ('/posts/like', PostLikeList),
 
 ], debug=True)

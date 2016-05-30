@@ -232,3 +232,11 @@ class PostLike(PostMixin, LoginRequired):
             post.likes.remove(self.user.key())
         post.put()
         return self.redirect('/blogs/%s/posts/%s' % (blog_id, post_id))
+
+
+class PostLikeList(LoginRequired):
+
+    def get(self):
+        self.authenticate()
+        posts = Post.gql("WHERE likes = :1", self.user.key())
+        return self.render("post-like.html", posts=posts)

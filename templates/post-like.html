@@ -1,0 +1,22 @@
+{% extends "index.html" %}
+
+{% block heading %}Post You Liked{% endblock %}
+{% block subheading %}Loving all these posts!{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+    {% for post in posts %}
+    <div class="post-preview">
+      <a href="/blogs/{{ post.parent().key().id() }}/posts/{{ post.key().id() }}">
+        <h2 class="post-title">{{ post.subject }}</h2>
+      </a>
+      <p class="post-meta">Posted by <a href="#">{{ post.created_by.name }}</a> {{ post.created|timesince }}</p>
+    </div>
+    <hr>
+    {% else %}
+      <h3 class="text-center">There are no posts.</h3>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
