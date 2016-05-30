@@ -4,6 +4,9 @@
 {% block subheading %}
   A Post From {{ blog.title }}<br>
   {{ post.created |timesince }}<br>
+  {% if post.created_by.key() ==  user.key() %}
+  <small><a href="/blogs/{{ blog.key().id() }}/posts/{{ post.key().id() }}/update">Edit</a> | Delete</small><br>
+  {% endif %}
   {% set comment_count = comments.count() %}
   <small>{{ comment_count }} Comment{% if comment_count > 1 %}s{% endif %} </small>
 {% endblock %}

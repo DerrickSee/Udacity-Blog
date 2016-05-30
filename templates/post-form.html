@@ -1,12 +1,16 @@
 {% extends "index.html" %}
 
-{% block heading %}New Post{% endblock %}
-{% block subheading %}What's up?{% endblock %}
+{% block heading %}{% if post %}Update{% else %}New{% endif %} Post{% endblock %}
+{% block subheading %}{% if post %}Making changes?{% else %}What's up?{% endif %}{% endblock %}
 
 {% block content %}
 <div class="row">
   <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
     <form method="post">
+      {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+      {% endif %}
+      {% if not post %}
       <div class="row control-group">
         <div class="form-group col-xs-12 floating-label-form-group controls">
           <label>Blog</label>
@@ -18,6 +22,7 @@
           <p class="help-block text-danger">{{ error_subject }}</p>
         </div>
       </div>
+      {% endif %}
       <div class="row control-group">
         <div class="form-group col-xs-12 floating-label-form-group controls">
           <label>Subject</label>
@@ -28,7 +33,7 @@
       <div class="row control-group">
         <div class="form-group col-xs-12 floating-label-form-group controls">
           <label>Content</label>
-          <textarea class="form-control" placeholder="Enter your content" name="content" required data-validation-required-message="Please enter content." value="{{ content }}"></textarea>
+          <textarea class="form-control" placeholder="Enter your content" name="content" required data-validation-required-message="Please enter content.">{{ content }}</textarea>
           <p class="help-block text-danger">{{ error_content }}</p>
         </div>
       </div

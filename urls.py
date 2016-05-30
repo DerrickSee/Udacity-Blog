@@ -13,7 +13,8 @@ app = webapp2.WSGIApplication([
     ('/blogs/new', NewBlog),
     ('/blogs/([0-9]+)', BlogPage),
     ('/blogs/([0-9]+)/posts/([0-9]+)', PostPage),
+    ('/blogs/([0-9]+)/posts/([0-9]+)/update', PostUpdate),
 
     ('/posts/new', NewPost),
-    
+
 ], debug=True)

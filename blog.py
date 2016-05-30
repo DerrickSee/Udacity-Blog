@@ -131,7 +131,30 @@ class BlogPage(BlogHandler):
         self.render("blog.html", posts = posts, blog = blog)
 
 
-class PostPage(BlogHandler):
+class NewPost(LoginRequired):
+    def get(self):
+        self.authenticate()
+        blogs = Blog.all().filter('created_by = ', self.user)
+        self.render('post-form.html', blogs=blogs, blog_id=self.request.GET.get('blog_id'))
+
+    def post(self):
+        self.authenticate()
+        parent = self.request.POST.get('blog')
+        subject = self.request.POST.get('subject')
+        content = self.request.POST.get('content')
+
+        if subject and content:
+            parent = Blog.get_by_id(int(parent))
+            p = Post(parent = parent.key(), subject = subject, content = content,
+                     created_by=self.user)
+            p.put()
+            self.redirect('/blogs/%s/posts/%s' % (parent.key().id(), p.key().id()))
+        else:
+            error = "subject and content, please!"
+            self.render("post-form.html", subject=subject, content=content, error=error)
+
+
+class PostPage(LoginRequired):
     def get(self, blog_id, post_id):
         blog = Blog.get_by_id(int(blog_id))
         post = Post.get_by_id(int(post_id), parent=blog)
@@ -142,6 +165,7 @@ class PostPage(BlogHandler):
         self.render("post.html", post = post, blog=blog, comments=comments)
 
     def post(self, blog_id, post_id):
+        self.authenticate()
         blog = Blog.get_by_id(int(blog_id))
         post = Post.get_by_id(int(post_id), parent=blog)
 
@@ -156,24 +180,34 @@ class PostPage(BlogHandler):
         self.redirect('/blogs/%s/posts/%s' % (blog_id, post_id))
 
 
-class NewPost(LoginRequired):
-    def get(self):
-        self.authenticate()
-        blogs = Blog.all().filter('created_by = ', self.user)
-        self.render('post-form.html', blogs=blogs, blog_id=self.request.GET.get('blog_id'))
+class PostUpdate(LoginRequired):
 
-    def post(self):
+    def get_post(self, blog_id, post_id):
         self.authenticate()
-        parent = self.request.get('blog')
-        subject = self.request.get('subject')
-        content = self.request.get('content')
+        blog = Blog.get_by_id(int(blog_id))
+        post = Post.get_by_id(int(post_id), parent=blog)
+        if not post or post.created_by.key() != self.user.key():
+            return self.render404()
+        return post
+
+    def get(self, blog_id, post_id):
+        post = self.get_post(blog_id, post_id)
+        blogs = Blog.all().filter('created_by = ', self.user)
+        self.render("post-form.html", post=post, blog_id=blog_id, blogs=blogs,
+                    subject=post.subject, content=post.content)
+
+    def post(self, blog_id, post_id):
+        post = self.get_post(blog_id, post_id)
+        subject = self.request.POST.get('subject')
+        content = self.request.POST.get('content')
 
         if subject and content:
-            parent = Blog.get_by_id(int(parent))
-            p = Post(parent = parent.key(), subject = subject, content = content,
-                     created_by=self.user)
-            p.put()
-            self.redirect('/blogs/%s/posts/%s' % (parent.key().id(), p.key().id()))
+            post.subject = subject
+            post.content = content
+            post.put()
+            self.redirect('/blogs/%s/posts/%s' % (blog_id, post_id))
         else:
             error = "subject and content, please!"
-            self.render("newpost.html", subject=subject, content=content, error=error)
+            blogs = Blog.all().filter('created_by = ', self.user)
+            self.render("post-form.html", post=post, blog_id=blog_id, blogs=blogs,
+                        subject=post.subject, content=post.content, error=error)
